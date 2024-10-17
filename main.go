@@ -12,7 +12,7 @@ import (
 	"solana-program-scanner/block_height_manager"
 )
 
-func main() {
+func parseFlag() {
 	flag.StringVar(&conf.Solana.RpcEndpoint, "solana-rpc-endpoint", DefaultSolanaRpcEndpoint, "solana rpc endpoint")
 
 	var ReqInterval int
@@ -21,39 +21,39 @@ func main() {
 
 	flag.IntVar(&conf.Solana.BlockGetterWorkerNumber, "block-getter-worker-number", DefaultSolanaBlockGetterWorkerNumber, "block getter worker number")
 	flag.Uint64Var(&conf.Solana.StartSlot, "start-slot", DefaultSolanaStartSlot, "start slot")
+}
 
-	taskCh := make(chan uint64, 1000)
-
-	blockCh := make(chan *rpc.GetBlock, 100)
-
-	txRawCh := make(chan string, 100)
-	ixRawCh := make(chan string, 100)
-	ixIndexCh := make(chan bson.M, 100)
-	ixCh := make(chan bson.M, 100)
+func main() {
+	parseFlag()
 
 	ctx := context.Background()
 	var wg sync.WaitGroup
 
-	mongo := NewMongoAttendant(txRawCh, ixRawCh, ixIndexCh, ixCh)
+	ixCh := make(chan bson.M, 100)
+	mongo := NewMongoAttendant(ixCh)
+
 	mongo.startServe(ctx, &wg)
 
-	blockProcessor := NewBlockProcessorAdmin(blockCh, txRawCh, ixRawCh, ixIndexCh, ixCh)
+	blockCh := make(chan *rpc.GetBlock, 100)
+	blockProcessor := NewBlockProcessorAdmin(blockCh, ixCh)
 	wg.Add(1)
 	go blockProcessor.run(ctx, &wg)
 
 	fc := NewFlowController(5, 5, time.Second, time.Second)
-	go fc.startLog(time.Second * 1)
+	go fc.startLog(time.Second * 5)
+
 	bhm := block_height_manager.NewBlockHeightManager()
 	blockGetter := NewBlockGetter(conf.Solana.BlockGetterWorkerNumber, bhm, fc)
 	startBlockHeight := blockGetter.getBlockHeightBySlot(conf.Solana.StartSlot)
 	bhm.Init(startBlockHeight - 1)
 
+	taskCh := make(chan uint64, 1000)
 	wg.Add(1)
 	go blockGetter.run(ctx, &wg, taskCh, blockCh)
 
-	taskDispatch := NewBlockTaskDispatch(fc)
+	taskDispatcher := NewBlockTaskDispatcher(fc)
 	wg.Add(1)
-	go taskDispatch.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 20, taskCh)
+	go taskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 5, taskCh)
 
 	Logger.Info("wait all goroutine done")
 	wg.Wait()

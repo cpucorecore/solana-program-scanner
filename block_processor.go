@@ -60,13 +60,13 @@ func (b *blockProcessorAdmin) run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func NewBlockProcessorAdmin(blockCh chan *rpc.GetBlock, txRawChan chan string, ixRawChan chan string, ixIndexCh chan bson.M, ixCh chan bson.M) BlockProcessorAdmin {
+func NewBlockProcessorAdmin(blockCh chan *rpc.GetBlock, ixCh chan bson.M) BlockProcessorAdmin {
 	bpf, err := newBlockProcessorFile()
 	if err != nil {
 		Logger.Fatal(fmt.Sprintf("newBlockProcessorFile err:%v", err))
 	}
 
-	bpp, err := newBlockProcessorParser(txRawChan, ixRawChan, ixIndexCh, ixCh)
+	bpp, err := newBlockProcessorParser(ixCh)
 	if err != nil {
 		Logger.Fatal(fmt.Sprintf("newBlockProcessorParser err:%v", err))
 	}
@@ -123,18 +123,12 @@ func (bpf *BlockProcessorFile) done() {
 }
 
 type BlockProcessorParser struct {
-	txRawChan chan string
-	ixRawChan chan string
-	ixIndexCh chan bson.M
-	ixCh      chan bson.M
+	ixCh chan bson.M
 }
 
-func newBlockProcessorParser(txRawChan chan string, ixRawChan chan string, ixIndexCh chan bson.M, ixCh chan bson.M) (bpp *BlockProcessorParser, err error) {
+func newBlockProcessorParser(ixCh chan bson.M) (bpp *BlockProcessorParser, err error) {
 	return &BlockProcessorParser{
-		txRawChan: txRawChan,
-		ixRawChan: ixRawChan,
-		ixIndexCh: ixIndexCh,
-		ixCh:      ixCh,
+		ixCh: ixCh,
 	}, nil
 }
 
@@ -143,14 +137,12 @@ func (bpp *BlockProcessorParser) name() string {
 }
 
 const (
-	OpenbookV2AddressMainnet = "opnb2LAfJYbRMAHHvqjCwQxanZn7ReEHp1k81EohpZb"
-	RadiumAmmAddressMainnet  = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+	RadiumAmmAddressMainnet = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
 )
 
 func (bpp *BlockProcessorParser) process(block *rpc.GetBlock) error {
 	for _, tx := range block.Transactions {
 		if tx.Meta.Err != nil {
-			//Logger.Info(fmt.Sprintf("skip failed tx Signatures:%v", tx.Transaction.Signatures))
 			continue
 		}
 
@@ -163,27 +155,15 @@ func (bpp *BlockProcessorParser) process(block *rpc.GetBlock) error {
 		for _, instruction := range tx.Transaction.Message.Instructions {
 			ixJson, err := json.Marshal(instruction)
 			if err != nil {
-				Logger.Error(fmt.Sprintf("json marshal err:%s", err.Error()))
-				// TODO exit
+				Logger.Fatal(fmt.Sprintf("json marshal err:%s", err.Error()))
 			}
 
 			err = json.Unmarshal(ixJson, &ixF)
 			if err != nil {
-				Logger.Error(fmt.Sprintf("json unmarshal err:%s", err.Error()))
-				// TODO exit
+				Logger.Fatal(fmt.Sprintf("json unmarshal err:%s", err.Error()))
 			}
 
 			if ixF.ProgramId == RadiumAmmAddressMainnet {
-				txJson, err := json.Marshal(tx)
-				if err != nil {
-					Logger.Error(fmt.Sprintf("json unmarshal err:%s", err.Error()))
-					// TODO exit
-				}
-				//Logger.Info(string(txJson))
-				//Logger.Info(string(ixJson))
-				bpp.txRawChan <- string(txJson)
-				bpp.ixRawChan <- string(ixJson)
-
 				var accounts []*ag_solanago.AccountMeta
 				for _, account := range ixF.Accounts {
 					accounts = append(accounts, &ag_solanago.AccountMeta{
@@ -197,14 +177,11 @@ func (bpp *BlockProcessorParser) process(block *rpc.GetBlock) error {
 				if err != nil {
 					Logger.Error(fmt.Sprintf("decode err:%s", err.Error()))
 				}
-				//Logger.Info(fmt.Sprintf("%s", hex.EncodeToString(ixData)))
 
 				ix, err := raydium_amm.DecodeInstruction(accounts, ixData)
 				if err != nil {
 					Logger.Error(fmt.Sprintf("decode instruction err:%s", err.Error()))
 				}
-
-				bpp.ixIndexCh <- bson.M{"ins": raydium_amm.InstructionIDToName(ix.TypeID.Uint8()), "signature": tx.Transaction.Signatures}
 
 				switch ix.TypeID.Uint8() {
 				case raydium_amm.Instruction_SwapBaseIn:
@@ -243,9 +220,6 @@ func (bpp *BlockProcessorParser) process(block *rpc.GetBlock) error {
 }
 
 func (bpp *BlockProcessorParser) done() {
-	close(bpp.txRawChan)
-	close(bpp.ixRawChan)
-	close(bpp.ixIndexCh)
 	close(bpp.ixCh)
 }
 

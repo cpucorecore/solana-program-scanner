@@ -13,20 +13,20 @@ const (
 	Commitment = rpc.CommitmentFinalized
 )
 
-type BlockTaskDispatch struct {
+type BlockTaskDispatcher struct {
 	cli rpc.RpcClient
 	fc  FlowController
 }
 
-func NewBlockTaskDispatch(fc FlowController) *BlockTaskDispatch {
+func NewBlockTaskDispatcher(fc FlowController) *BlockTaskDispatcher {
 	cli := rpc.NewRpcClient(conf.Solana.RpcEndpoint)
-	return &BlockTaskDispatch{
+	return &BlockTaskDispatcher{
 		cli: cli,
 		fc:  fc,
 	}
 }
 
-func (btd *BlockTaskDispatch) keepDispatchTaskMock(wg *sync.WaitGroup, startSlot uint64, count uint64, taskCh chan uint64) {
+func (btd *BlockTaskDispatcher) keepDispatchTaskMock(wg *sync.WaitGroup, startSlot uint64, count uint64, taskCh chan uint64) {
 	defer wg.Done()
 
 	start := startSlot
@@ -39,7 +39,7 @@ func (btd *BlockTaskDispatch) keepDispatchTaskMock(wg *sync.WaitGroup, startSlot
 	close(taskCh)
 }
 
-func (btd *BlockTaskDispatch) keepDispatchingTask(ctx context.Context, wg *sync.WaitGroup, startSlot uint64, count uint64, taskCh chan uint64) {
+func (btd *BlockTaskDispatcher) keepDispatchingTask(ctx context.Context, wg *sync.WaitGroup, startSlot uint64, count uint64, taskCh chan uint64) {
 	defer wg.Done()
 
 	const QueryInterval = time.Second * 10
