@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/blocto/solana-go-sdk/rpc"
-
 	"solana-program-scanner/block_height_manager"
 )
 

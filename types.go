@@ -17,3 +17,19 @@ type OrmTx struct {
 	CreatedAt     time.Time `xorm:"created"`
 	Index         int
 }
+
+func (ot *OrmTx) TableName() string {
+	return "tx"
+}
+
+type Market struct {
+	Address      string `json:"address"`
+	BaseDecimal  uint64 `json:"base_decimal"`
+	QuoteDecimal uint64 `json:"quote_decimal"`
+	BaseMint     string `json:"base_mint"`
+	QuoteMint    string `json:"quote_mint"`
+}
+
+func (ot *Market) OrmMarket() string {
+	return "market"
+}

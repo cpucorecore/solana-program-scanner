@@ -36,7 +36,7 @@ type tpsCounter struct {
 }
 
 type TpsCounter interface {
-	onDone(time.Time) int
+	onDone(time.Time) float32
 	String() string
 }
 
@@ -52,32 +52,43 @@ func NewTpsCounter(countWindow int) TpsCounter {
 	}
 }
 
-func (mtt *tpsCounter) onDone(timestamp time.Time) (tps int) {
-	mtt.mu.Lock()
-	defer mtt.mu.Unlock()
+func (tc *tpsCounter) onDone(timestamp time.Time) (tps float32) {
+	tc.mu.Lock()
+	defer tc.mu.Unlock()
 
-	mtt.timestamps = append(mtt.timestamps, timestamp)
-	reqCnt := len(mtt.timestamps)
-	if reqCnt == mtt.countWindow {
-		tps = reqCnt / int(mtt.timestamps[reqCnt-1].Sub(mtt.timestamps[0])/time.Second)
-		mtt.timestamps = mtt.timestamps[1:]
+	tc.timestamps = append(tc.timestamps, timestamp)
+	reqCnt := len(tc.timestamps)
+	if reqCnt == tc.countWindow {
+		tps = tc.curTps()
+		tc.timestamps = tc.timestamps[1:]
 	}
 
 	return
 }
 
-func (mtt *tpsCounter) String() string {
+func (tc *tpsCounter) curTps() (tps float32) {
+	reqCnt := len(tc.timestamps)
+	if reqCnt <= 1 {
+		return
+	}
+
+	timeSecond := float32(1.0*tc.timestamps[reqCnt-1].Sub(tc.timestamps[0])) / float32(time.Second)
+	tps = float32(reqCnt) / timeSecond
+	return
+}
+
+func (tc *tpsCounter) String() string {
 	var sb strings.Builder
 	sb.WriteString("[")
-	for _, timestamp := range mtt.timestamps {
+	for _, timestamp := range tc.timestamps {
 		sb.WriteString(strconv.FormatInt(timestamp.UnixMilli(), 10))
 		sb.WriteString("\n")
 	}
 	sb.WriteString("]\n")
 
-	reqCnt := len(mtt.timestamps)
+	reqCnt := len(tc.timestamps)
 	if reqCnt >= 2 {
-		sb.WriteString(fmt.Sprintf("tps:%v", reqCnt*1.0/int(mtt.timestamps[reqCnt-1].Sub(mtt.timestamps[0])/time.Second)))
+		sb.WriteString(fmt.Sprintf("tps:%v", tc.curTps()))
 	}
 
 	return sb.String()
@@ -127,7 +138,7 @@ func (fc *flowController) onDone(timestamp time.Time) {
 	fc.errCounterTmp.reset()
 	fc.okCounter.up()
 	tps := fc.tpsCounter.onDone(timestamp)
-	if tps > fc.targetTps {
+	if tps > float32(fc.targetTps) {
 		time.Sleep(time.Millisecond * 100) // TODO calc the sleep time
 	}
 }

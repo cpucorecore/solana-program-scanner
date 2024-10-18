@@ -34,10 +34,11 @@ func main() {
 
 	mongo.startServe(ctx, &wg)
 
-	blockCh := make(chan *rpc.GetBlock, 100)
-	blockProcessor := NewBlockProcessorAdmin(blockCh, ixCh)
+	txCh := make(chan *OrmTx, 1000)
+	const DataSource = "postgres://postgres:12345678@localhost:5432/postgres?sslmode=disable" // TODO config
+	pa := NewPostgresAttendant(DataSource)
 	wg.Add(1)
-	go blockProcessor.run(ctx, &wg)
+	go pa.serveTx(ctx, &wg, txCh)
 
 	fc := NewFlowController(5, 5, time.Second, time.Second)
 	go fc.startLog(time.Second * 5)
@@ -47,13 +48,18 @@ func main() {
 	startBlockHeight := blockGetter.getBlockHeightBySlot(conf.Solana.StartSlot)
 	bhm.Init(startBlockHeight - 1)
 
+	blockCh := make(chan *rpc.GetBlock, 100)
+	blockProcessor := NewBlockProcessorAdmin(blockCh, txCh, ixCh, blockGetter)
+	wg.Add(1)
+	go blockProcessor.run(ctx, &wg)
+
 	taskCh := make(chan uint64, 1000)
 	wg.Add(1)
 	go blockGetter.run(ctx, &wg, taskCh, blockCh)
 
 	taskDispatcher := NewBlockTaskDispatcher(fc)
 	wg.Add(1)
-	go taskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 5, taskCh)
+	go taskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 1, taskCh)
 
 	Logger.Info("wait all goroutine done")
 	wg.Wait()
