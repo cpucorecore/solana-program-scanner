@@ -269,6 +269,7 @@ func (bpp *BlockProcessorParser) process(block *rpc.GetBlock) error {
 
 func (bpp *BlockProcessorParser) done() {
 	close(bpp.ixCh)
+	close(bpp.txCh)
 }
 
 var _ BlockProcessor = &BlockProcessorParser{}

@@ -47,11 +47,12 @@ func (pa *PostgresAttendant) serveTx(ctx context.Context, wg *sync.WaitGroup, tx
 
 			_, err := pa.cli.Insert(tx)
 			if err != nil {
-				Logger.Fatal(fmt.Sprintf("%v", err))
 				var pgErr *pq.Error
 				if errors.As(err, &pgErr) && string(pgErr.Code) == DbErrCodeUniqueConstrain {
 					continue
 				}
+
+				Logger.Fatal(fmt.Sprintf("%v", err))
 			}
 		}
 	}

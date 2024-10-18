@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,17 +17,17 @@ type FlowController interface {
 }
 
 type flowController struct {
-	targetTps      int
-	tpsCountWindow int
-	tpsWaitUnit    time.Duration
-	errWaitUnit    time.Duration
+	TargetTps      int
+	TpsCountWindow int
+	TpsWaitUnit    time.Duration
+	ErrWaitUnit    time.Duration
 
-	stop bool
+	Stop bool
 
-	okCounter     mutexCounter
-	errCounter    mutexCounter
-	errCounterTmp mutexCounter
-	tpsCounter    TpsCounter
+	OkCounter     mutexCounter
+	ErrCounter    mutexCounter
+	ErrCounterTmp mutexCounter
+	TpsCounter    TpsCounter
 }
 
 type tpsCounter struct {
@@ -126,45 +127,40 @@ func (mc *mutexCounter) reset() {
 
 func NewFlowController(targetTps int, tpsCountWindow int, tpsWaitUnit time.Duration, errWaitUnit time.Duration) FlowController {
 	return &flowController{
-		targetTps:      targetTps,
-		tpsCountWindow: tpsCountWindow,
-		tpsWaitUnit:    tpsWaitUnit,
-		errWaitUnit:    errWaitUnit,
-		tpsCounter:     NewTpsCounter(tpsCountWindow),
+		TargetTps:      targetTps,
+		TpsCountWindow: tpsCountWindow,
+		TpsWaitUnit:    tpsWaitUnit,
+		ErrWaitUnit:    errWaitUnit,
+		TpsCounter:     NewTpsCounter(tpsCountWindow),
 	}
 }
 
 func (fc *flowController) onDone(timestamp time.Time) {
-	fc.errCounterTmp.reset()
-	fc.okCounter.up()
-	tps := fc.tpsCounter.onDone(timestamp)
-	if tps > float32(fc.targetTps) {
+	fc.ErrCounterTmp.reset()
+	fc.OkCounter.up()
+	tps := fc.TpsCounter.onDone(timestamp)
+	if tps > float32(fc.TargetTps) {
 		time.Sleep(time.Millisecond * 100) // TODO calc the sleep time
 	}
 }
 
 func (fc *flowController) onErr() {
-	fc.errCounterTmp.up()
-	fc.errCounter.up()
-	time.Sleep(fc.errWaitUnit * time.Duration(fc.errCounterTmp.get()))
+	fc.ErrCounterTmp.up()
+	fc.ErrCounter.up()
+	time.Sleep(fc.ErrWaitUnit * time.Duration(fc.ErrCounterTmp.get()))
 }
 
 func (fc *flowController) startLog(logInterval time.Duration) {
-	fc.stop = false
-	for !fc.stop {
+	fc.Stop = false
+	for !fc.Stop {
 		time.Sleep(logInterval)
-		Logger.Info(fmt.Sprintf(`flow controller summary:
-okCounter:%d
-errCounter:%d
-errCounterTmp:%d
-tpsCounter:
-%s
-`, fc.okCounter.get(), fc.errCounter.get(), fc.errCounterTmp.get(), fc.tpsCounter))
+		fcJson, _ := json.Marshal(fc)
+		Logger.Info(fmt.Sprintf("flow controller dump: %s", string(fcJson)))
 	}
 }
 
 func (fc *flowController) stopLog() {
-	fc.stop = true
+	fc.Stop = true
 }
 
 var _ FlowController = &flowController{}

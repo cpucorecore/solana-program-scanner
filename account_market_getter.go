@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/mr-tron/base58"
+	"time"
 )
 
 const (
@@ -21,13 +22,34 @@ type MarketGetter interface {
 }
 
 func (bg *BlockGetter) getMarket(marketAddress string) (market *Market, err error) {
-	ctx := context.Background()
-	info, err := bg.cli.GetAccountInfoWithConfig(ctx, marketAddress, rpc.GetAccountInfoConfig{Encoding: rpc.AccountEncodingBase64, DataSlice: &rpc.DataSlice{Offset: 0, Length: MarketAccountDataLength * 3}})
-	if err != nil {
-		Logger.Fatal(fmt.Sprintf("GetAccountInfoWithConfig err:%v", err)) // TODO retry?
+	config := rpc.GetAccountInfoConfig{
+		Encoding: rpc.AccountEncodingBase64,
+		DataSlice: &rpc.DataSlice{
+			Offset: 0,
+			Length: MarketAccountDataLength * 3,
+		},
 	}
 
-	dataArray, ok := info.Result.Value.Data.([]any)
+	var data any
+	for {
+		resp, err := bg.cli.GetAccountInfoWithConfig(context.Background(), marketAddress, config)
+
+		if err != nil {
+			bg.fc.onErr()
+			continue
+		}
+
+		if resp.Error != nil {
+			bg.fc.onDone(time.Now())
+			break
+		}
+
+		bg.fc.onDone(time.Now())
+
+		data = resp.Result.Value.Data
+	}
+
+	dataArray, ok := data.([]any)
 	if !ok {
 		Logger.Fatal(fmt.Sprintf("type assertion err:%v on 'Data'", err))
 	}

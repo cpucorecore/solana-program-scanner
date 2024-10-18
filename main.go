@@ -59,10 +59,10 @@ func main() {
 
 	taskDispatcher := NewBlockTaskDispatcher(fc)
 	wg.Add(1)
-	go taskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 1, taskCh)
+	go taskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 10, taskCh)
 
 	Logger.Info("wait all goroutine done")
 	wg.Wait()
-	fc.stopLog()
 	Logger.Info("all goroutine done")
+	fc.stopLog()
 }

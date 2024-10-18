@@ -59,7 +59,9 @@ func (bg *BlockGetter) getBlockHeightBySlot(slot uint64) int64 {
 
 func (bg *BlockGetter) run(ctx context.Context, wg *sync.WaitGroup, taskCh chan uint64, blockCh chan *rpc.GetBlock) {
 	defer wg.Done()
-	defer close(blockCh)
+	defer func() {
+		close(blockCh)
+	}()
 
 	var wgWorker sync.WaitGroup
 	wgWorker.Add(bg.workerNumber)
