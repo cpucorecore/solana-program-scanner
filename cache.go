@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/go-redis/redis/v8"
 )
 
@@ -21,8 +22,7 @@ type CacheMarketRedis struct {
 var _ Cache[string, *OrmMarket] = &CacheMarketRedis{}
 
 const (
-	RedisKeyPrefixMarket    = "m:"
-	RedisKeyPrefixMarketLen = len(RedisKeyPrefixMarket)
+	RedisKeyPrefixMarket = "m:"
 )
 
 func NewCacheRedisMarket(redisCli *redis.Client) Cache[string, *OrmMarket] {

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestSet(t *testing.T) {

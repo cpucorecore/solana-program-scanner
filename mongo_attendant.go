@@ -9,15 +9,15 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-type MongoAttendant struct {
-	cli  *mongo.Client
-	ixCh chan bson.M
-}
-
 const (
 	Database     = "raydium_amm"
 	CollectionIx = "ixes"
 )
+
+type MongoAttendant struct {
+	cli  *mongo.Client
+	ixCh chan bson.M
+}
 
 func NewMongoAttendant(ixCh chan bson.M, client *mongo.Client) *MongoAttendant {
 	return &MongoAttendant{

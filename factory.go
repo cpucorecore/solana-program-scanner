@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/blocto/solana-go-sdk/rpc"
-	"github.com/go-redis/redis/v8"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"solana-program-scanner/block_height_manager"
 	"sync"
 	"time"
 	"xorm.io/xorm"
+
+	"github.com/blocto/solana-go-sdk/rpc"
+	"github.com/go-redis/redis/v8"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	"solana-program-scanner/block_height_manager"
 )
 
 type Factory struct {
@@ -24,18 +25,19 @@ type Factory struct {
 	// pipelines
 	blockGetTaskCh chan uint64
 	blockCh        chan *rpc.GetBlock
-	txCh           chan *OrmTx
-	ixCh           chan bson.M
+	ormTxCh        chan *OrmTx
 
 	flowController      FlowController
 	blockHeightManager  block_height_manager.BlockHeightManager
 	mongoAttendant      *MongoAttendant
 	postgresAttendant   *PostgresAttendant
 	blockTaskDispatcher *BlockTaskDispatcher
-	blockGetter         *BlockGetter
-	blockProcessorAdmin BlockProcessorAdmin
-	marketCache         Cache[string, *OrmMarket]
-	marketGetter        MarketGetter
+	blockGetter         *GetterBlock
+	cacheMarket         Cache[string, *OrmMarket]
+	getterMarket        GetterMarket
+	parserTxRaydiumAmm  *ParserTxRaydiumAmm
+	parserTx            *ParserTx
+	blockHandler        *BlockHandler
 }
 
 func (f *Factory) assembleRedisOptions(addr string, username string, password string) *redis.Options {
@@ -85,8 +87,7 @@ func (f *Factory) assembleSolanaClient() *rpc.RpcClient {
 func (f *Factory) assemblePipelines() {
 	f.blockGetTaskCh = make(chan uint64)
 	f.blockCh = make(chan *rpc.GetBlock)
-	f.txCh = make(chan *OrmTx, 1000)
-	f.ixCh = make(chan bson.M, 100)
+	f.ormTxCh = make(chan *OrmTx, 1000)
 }
 
 func (f *Factory) assembleFlowController() {
@@ -98,7 +99,6 @@ func (f *Factory) assembleBlockHeightManager() {
 }
 
 func (f *Factory) assembleMongoAttendant() {
-	f.mongoAttendant = NewMongoAttendant(f.ixCh, f.mongoCli)
 }
 
 func (f *Factory) assemblePostgresAttendant() {
@@ -109,20 +109,34 @@ func (f *Factory) assembleBlockTaskDispatcher() {
 	f.blockTaskDispatcher = NewBlockTaskDispatcher(f.flowController)
 }
 
-func (f *Factory) assembleBlockGetter(blockGetterWorkerNumber int) {
-	f.blockGetter = NewBlockGetter(blockGetterWorkerNumber, f.blockHeightManager, f.flowController)
+func (f *Factory) assembleGetterBlock(blockGetterWorkerNumber int) {
+	f.blockGetter = NewGetterBlock(blockGetterWorkerNumber, f.blockHeightManager, f.flowController)
 }
 
-func (f *Factory) assembleBlockProcessor() {
-	f.blockProcessorAdmin = NewBlockProcessorAdmin(f.blockCh, f.txCh, f.ixCh, f.blockGetter)
-}
-
-func (f *Factory) assembleMarketCache() {
-	f.marketCache = NewCacheRedisMarket(f.redisCli)
+func (f *Factory) assembleCacheMarket() {
+	f.cacheMarket = NewCacheRedisMarket(f.redisCli)
 }
 
 func (f *Factory) assembleMarketGetter() {
-	f.marketGetter = f.blockGetter
+	f.getterMarket = f.blockGetter
+}
+
+func (f *Factory) assembleParserTxRaydiumAmm() {
+	f.parserTxRaydiumAmm = NewParserTxRaydiumAmm(f.ormTxCh, f.getterMarket, f.cacheMarket)
+}
+
+func (f *Factory) assembleParserTx() {
+	f.parserTx = NewParserTx(f.parserTxRaydiumAmm)
+}
+
+func (f *Factory) assembleBlockHandler() {
+	f.blockHandler = NewBlockHandler(f.blockCh)
+
+	bpf := NewBlockProcessorFile("blocks.json")
+	bpp := NewBlockProcessorParser(f.parserTx)
+
+	f.blockHandler.registerProcessor(bpf)
+	f.blockHandler.registerProcessor(bpp)
 }
 
 func (f *Factory) assemble() *Factory {
@@ -139,12 +153,14 @@ func (f *Factory) assemble() *Factory {
 	f.assembleMongoAttendant()
 	f.assemblePostgresAttendant()
 	f.assembleBlockTaskDispatcher()
-	f.assembleBlockGetter(3) // TODO config
-	f.assembleBlockProcessor()
-	f.assembleMarketCache()
+	f.assembleGetterBlock(3) // TODO config
+	f.assembleCacheMarket()
 	f.assembleMarketGetter()
+	f.assembleParserTxRaydiumAmm()
+	f.assembleParserTx()
+	f.assembleBlockHandler()
 
-	startBlockHeight := f.blockGetter.getBlockHeightBySlot(conf.Solana.StartSlot)
+	startBlockHeight := f.blockGetter.getBlockHeight(conf.Solana.StartSlot)
 	f.blockHeightManager.Init(startBlockHeight - 1)
 
 	return f
@@ -156,13 +172,13 @@ func (f *Factory) runProducts(ctx context.Context) (*sync.WaitGroup, FlowControl
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go f.postgresAttendant.serveTx(ctx, &wg, f.txCh)
+	go f.postgresAttendant.serveTx(ctx, &wg, f.ormTxCh)
 
 	wg.Add(1)
-	go f.blockProcessorAdmin.run(ctx, &wg)
+	go f.blockHandler.keepHandling(ctx, &wg)
 
 	wg.Add(1)
-	go f.blockGetter.run(ctx, &wg, f.blockGetTaskCh, f.blockCh)
+	go f.blockGetter.keepBlockGetting(ctx, &wg, f.blockGetTaskCh, f.blockCh)
 
 	wg.Add(1)
 	go f.blockTaskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 3, f.blockGetTaskCh) // TODO config

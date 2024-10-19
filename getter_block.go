@@ -7,19 +7,16 @@ import (
 	"time"
 
 	"github.com/blocto/solana-go-sdk/rpc"
+
 	"solana-program-scanner/block_height_manager"
 )
 
-type BlockGetter struct {
+type GetterBlock struct {
 	workerNumber int
 	cli          rpc.RpcClient
 	bhm          block_height_manager.BlockHeightManager
 	fc           FlowController
 }
-
-const (
-	Delay = time.Second * 10
-)
 
 var (
 	transactionVersion = uint8(0)
@@ -33,9 +30,9 @@ var (
 	}
 )
 
-func NewBlockGetter(workerNumber int, bhm block_height_manager.BlockHeightManager, fc FlowController) *BlockGetter {
+func NewGetterBlock(workerNumber int, bhm block_height_manager.BlockHeightManager, fc FlowController) *GetterBlock {
 	cli := rpc.NewRpcClient(conf.Solana.RpcEndpoint)
-	return &BlockGetter{
+	return &GetterBlock{
 		workerNumber: workerNumber,
 		cli:          cli,
 		bhm:          bhm,
@@ -43,7 +40,7 @@ func NewBlockGetter(workerNumber int, bhm block_height_manager.BlockHeightManage
 	}
 }
 
-func (bg *BlockGetter) getBlockHeightBySlot(slot uint64) int64 {
+func (bg *GetterBlock) getBlockHeight(slot uint64) int64 {
 	ctx := context.Background()
 	resp, err := bg.cli.GetBlockWithConfig(ctx, slot, getBlockConfig)
 	if err != nil {
@@ -57,7 +54,7 @@ func (bg *BlockGetter) getBlockHeightBySlot(slot uint64) int64 {
 	return *resp.Result.BlockHeight
 }
 
-func (bg *BlockGetter) run(ctx context.Context, wg *sync.WaitGroup, taskCh chan uint64, blockCh chan *rpc.GetBlock) {
+func (bg *GetterBlock) keepBlockGetting(ctx context.Context, wg *sync.WaitGroup, taskCh chan uint64, blockCh chan *rpc.GetBlock) {
 	defer wg.Done()
 	defer func() {
 		close(blockCh)

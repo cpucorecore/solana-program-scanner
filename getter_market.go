@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
+
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/mr-tron/base58"
-	"time"
 )
 
 const (
@@ -17,11 +18,11 @@ const (
 	QuoteMintStartIndex     = 432
 )
 
-type MarketGetter interface {
+type GetterMarket interface {
 	getMarket(marketAddress string) (market *OrmMarket, err error)
 }
 
-func (bg *BlockGetter) getMarket(marketAddress string) (market *OrmMarket, err error) {
+func (bg *GetterBlock) getMarket(marketAddress string) (market *OrmMarket, err error) {
 	config := rpc.GetAccountInfoConfig{
 		Encoding: rpc.AccountEncodingBase64,
 		DataSlice: &rpc.DataSlice{

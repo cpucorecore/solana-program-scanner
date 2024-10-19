@@ -33,7 +33,7 @@ func (pa *PostgresAttendant) serveTx(ctx context.Context, wg *sync.WaitGroup, tx
 			return
 		case tx := <-txCh:
 			if tx == nil {
-				Logger.Info("txCh @ done")
+				Logger.Info("txWrapCh @ done")
 				return
 			}
 
