@@ -23,4 +23,5 @@ func main() {
 	fc.stopLog()
 
 	f.Shutdown()
+	Logger.Sync()
 }
