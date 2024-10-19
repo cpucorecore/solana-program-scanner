@@ -1,5 +1,5 @@
 test:
-	go build
+	go build -ldflags "-s -w"
 	./solana-program-scanner > scanner.log 2>&1
 
 clean:

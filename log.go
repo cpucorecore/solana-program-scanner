@@ -11,6 +11,11 @@ import (
 var Logger *zap.Logger
 
 func init() {
+	if !gc.AsyncLog {
+		Logger, _ = zap.NewDevelopment()
+		return
+	}
+
 	buffer := &zapcore.BufferedWriteSyncer{
 		Size:          1024 * 1024,
 		FlushInterval: time.Second * 10,

@@ -25,6 +25,7 @@ type Factory struct {
 	blockGetTaskCh chan uint64
 	blockCh        chan *rpc.GetBlock
 	ormTxCh        chan *OrmTx
+	OrmMarketCh    chan *OrmMarket
 
 	flowController      FlowController
 	blockHeightManager  block_height_manager.BlockHeightManager
@@ -82,6 +83,7 @@ func (f *Factory) assemblePipelines() {
 	f.blockGetTaskCh = make(chan uint64)
 	f.blockCh = make(chan *rpc.GetBlock)
 	f.ormTxCh = make(chan *OrmTx, 1000)
+	f.OrmMarketCh = make(chan *OrmMarket, 1000)
 }
 
 func (f *Factory) assembleFlowController() {
@@ -121,7 +123,7 @@ func (f *Factory) assembleMarketGetter() {
 }
 
 func (f *Factory) assembleParserTxRaydiumAmm() {
-	f.parserTxRaydiumAmm = NewParserTxRaydiumAmm(f.ormTxCh, f.getterMarket, f.cacheMarket)
+	f.parserTxRaydiumAmm = NewParserTxRaydiumAmm(f.ormTxCh, f.OrmMarketCh, f.getterMarket, f.cacheMarket)
 }
 
 func (f *Factory) assembleParserTx() {
@@ -131,11 +133,15 @@ func (f *Factory) assembleParserTx() {
 func (f *Factory) assembleBlockHandler() {
 	f.blockHandler = NewBlockHandler(f.blockCh)
 
-	bpf := NewBlockProcessorFile(DefaultBlocksFilePath)
+	//bpf := NewBlockProcessorFile(DefaultBlocksFilePath) // TODO config
 	bpp := NewBlockProcessorParser(f.parserTx)
 
-	f.blockHandler.registerProcessor(bpf)
+	//f.blockHandler.registerProcessor(bpf)
 	f.blockHandler.registerProcessor(bpp)
+}
+
+func (f *Factory) connectPipelines() {
+
 }
 
 func (f *Factory) assemble() *Factory {
@@ -160,6 +166,7 @@ func (f *Factory) assemble() *Factory {
 	startBlockHeight := f.blockGetter.getBlockHeight(gc.GetterBlock.StartSlot)
 	f.blockHeightManager.Init(startBlockHeight - 1)
 
+	f.connectPipelines()
 	return f
 }
 
@@ -170,6 +177,9 @@ func (f *Factory) runProducts(ctx context.Context) (*sync.WaitGroup, FlowControl
 
 	wg.Add(1)
 	go f.postgresAttendant.serveTx(ctx, &wg, f.ormTxCh)
+
+	wg.Add(1)
+	go f.postgresAttendant.serveMarket(ctx, &wg, f.OrmMarketCh)
 
 	wg.Add(1)
 	go f.blockHandler.keepHandling(ctx, &wg)

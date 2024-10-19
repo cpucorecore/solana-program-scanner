@@ -15,7 +15,7 @@ type OrmTx struct {
 	Block         int64
 	BlockAt       time.Time
 	CreatedAt     time.Time `xorm:"created"`
-	Index         int
+	Index         uint64
 }
 
 func (ot *OrmTx) TableName() string {
@@ -23,13 +23,14 @@ func (ot *OrmTx) TableName() string {
 }
 
 type OrmMarket struct {
-	Address      string `json:"address"`
-	BaseDecimal  uint64 `json:"base_decimal"`
-	QuoteDecimal uint64 `json:"quote_decimal"`
-	BaseMint     string `json:"base_mint"`
-	QuoteMint    string `json:"quote_mint"`
+	Address      string    `json:"address"`
+	BaseDecimal  uint64    `json:"base_decimal"`
+	QuoteDecimal uint64    `json:"quote_decimal"`
+	BaseMint     string    `json:"base_mint" xorm:"token0_address"`
+	QuoteMint    string    `json:"quote_mint" xorm:"token1_address"`
+	CreatedAt    time.Time `xorm:"created"`
 }
 
-func (ot *OrmMarket) OrmMarket() string {
+func (ot *OrmMarket) TableName() string {
 	return "market"
 }

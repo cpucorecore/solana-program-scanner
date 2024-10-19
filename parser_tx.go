@@ -17,9 +17,9 @@ func NewParserTx(parserTxRaydiumAmm *ParserTxRaydiumAmm) *ParserTx {
 	}
 }
 
-func (pt *ParserTx) ParseTx(blockHeight int64, blockTime int64, txIndex int, tx *rpc.GetBlockTransaction) {
+func (pt *ParserTx) ParseTx(blockHeight int64, blockTime int64, txIndex uint64, tx *rpc.GetBlockTransaction) {
 	var ixf rpc.InstructionFull
-	for _, instruction := range tx.Transaction.Message.Instructions {
+	for ixIndex, instruction := range tx.Transaction.Message.Instructions {
 		ixJson, err := json.Marshal(instruction)
 		if err != nil {
 			Logger.Fatal("json encode error", zap.Error(err))
@@ -31,7 +31,7 @@ func (pt *ParserTx) ParseTx(blockHeight int64, blockTime int64, txIndex int, tx 
 		}
 
 		if ixf.ProgramId == RadiumAmmAddressMainnet {
-			pt.parserTxRaydiumAmm.ParseTx(blockHeight, blockTime, txIndex, tx, &ixf)
+			pt.parserTxRaydiumAmm.ParseTx(blockHeight, blockTime, txIndex, uint64(ixIndex), tx, &ixf)
 		}
 	}
 }

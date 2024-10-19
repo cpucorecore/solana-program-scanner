@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	DefaultAsyncLog       = false
 	DefaultBlocksFilePath = "blocks.json"
 
 	DefaultSolanaRpcEndpoint = "https://api.mainnet-beta.solana.com"
@@ -24,9 +25,9 @@ const (
 	DefaultMongoHost = "localhost"
 	DefaultMongoPort = 27017
 
-	DefaultGetterBlockWorkerNumber = 3
-	DefaultGetterBlockStartSlot    = uint64(295503380)
-	DefaultGetterBlockSlotCount    = uint64(0)
+	DefaultGetterBlockWorkerNumber = 2
+	DefaultGetterBlockStartSlot    = uint64(295503385)
+	DefaultGetterBlockSlotCount    = uint64(1000)
 
 	DefaultFlowControllerTpsMax            = 0
 	DefaultFlowControllerTpsTpsCountWindow = 5
@@ -88,6 +89,7 @@ type FlowControllerConf struct {
 }
 
 type Config struct {
+	AsyncLog       bool
 	Solana         *SolanaConf
 	Redis          *RedisConf
 	Postgres       *PostgresConf
@@ -97,6 +99,7 @@ type Config struct {
 }
 
 var gc = &Config{
+	AsyncLog: DefaultAsyncLog,
 	Solana: &SolanaConf{
 		RpcEndpoint: DefaultSolanaRpcEndpoint,
 	},

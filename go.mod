@@ -1,6 +1,6 @@
 module solana-program-scanner
 
-go 1.23.0
+go 1.22.0
 
 require (
 	github.com/blocto/solana-go-sdk v1.30.0

@@ -22,7 +22,7 @@ func (bpp *BlockProcessorParser) process(block *rpc.GetBlock) error {
 			continue
 		}
 
-		bpp.parserTx.ParseTx(*block.BlockHeight, *block.BlockTime, index, &tx) // TODO go
+		bpp.parserTx.ParseTx(*block.BlockHeight, *block.BlockTime, uint64(index), &tx) // TODO go
 	}
 
 	return nil
