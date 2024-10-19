@@ -69,7 +69,7 @@ func (btd *BlockTaskDispatcher) keepDispatchingTask(ctx context.Context, wg *syn
 		if resp.Result >= cursor {
 			end := resp.Result
 			for ; cursor <= end; cursor++ {
-				if cursor == endCursor {
+				if endCursor != 0 && cursor == endCursor {
 					close(taskCh)
 					return
 				}

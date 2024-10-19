@@ -22,7 +22,7 @@ func (ot *OrmTx) TableName() string {
 	return "tx"
 }
 
-type Market struct {
+type OrmMarket struct {
 	Address      string `json:"address"`
 	BaseDecimal  uint64 `json:"base_decimal"`
 	QuoteDecimal uint64 `json:"quote_decimal"`
@@ -30,6 +30,6 @@ type Market struct {
 	QuoteMint    string `json:"quote_mint"`
 }
 
-func (ot *Market) OrmMarket() string {
+func (ot *OrmMarket) OrmMarket() string {
 	return "market"
 }

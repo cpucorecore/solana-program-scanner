@@ -18,10 +18,10 @@ const (
 )
 
 type MarketGetter interface {
-	getMarket(marketAddress string) (market *Market, err error)
+	getMarket(marketAddress string) (market *OrmMarket, err error)
 }
 
-func (bg *BlockGetter) getMarket(marketAddress string) (market *Market, err error) {
+func (bg *BlockGetter) getMarket(marketAddress string) (market *OrmMarket, err error) {
 	config := rpc.GetAccountInfoConfig{
 		Encoding: rpc.AccountEncodingBase64,
 		DataSlice: &rpc.DataSlice{
@@ -73,7 +73,7 @@ func (bg *BlockGetter) getMarket(marketAddress string) (market *Market, err erro
 	baseMintBytes := decodeString[BaseMintStartIndex : BaseMintStartIndex+32]
 	quoteMintBytes := decodeString[QuoteMintStartIndex : QuoteMintStartIndex+32]
 
-	return &Market{
+	return &OrmMarket{
 		Address:      marketAddress,
 		BaseDecimal:  getUint64ByBytesLE(baseDecimalBytes),
 		QuoteDecimal: getUint64ByBytesLE(quoteDecimalBytes),

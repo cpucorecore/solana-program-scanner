@@ -11,24 +11,16 @@ import (
 )
 
 const (
-	DbDriver                 = "postgres"
 	DbErrCodeUniqueConstrain = "23505"
 )
 
 type PostgresAttendant struct {
-	dataSource string
-	cli        *xorm.Engine
+	cli *xorm.Engine
 }
 
-func NewPostgresAttendant(dataSource string) *PostgresAttendant {
-	engine, err := xorm.NewEngine(DbDriver, dataSource)
-	if err != nil {
-		Logger.Fatal(fmt.Sprintf("db NewEngine err:%v", err))
-	}
-
+func NewPostgresAttendant(engine *xorm.Engine) *PostgresAttendant {
 	return &PostgresAttendant{
-		dataSource: dataSource,
-		cli:        engine,
+		cli: engine,
 	}
 }
 

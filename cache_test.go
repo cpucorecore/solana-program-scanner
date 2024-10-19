@@ -10,7 +10,7 @@ func TestSet(t *testing.T) {
 	client := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 	cm := NewCacheRedisMarket(client)
 
-	mockMarket := Market{
+	mockMarket := OrmMarket{
 		Address:      "mock",
 		BaseDecimal:  0,
 		QuoteDecimal: 0,

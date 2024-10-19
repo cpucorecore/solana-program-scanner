@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type MongoAttendant struct {
@@ -17,17 +15,11 @@ type MongoAttendant struct {
 }
 
 const (
-	MongoDataSource = "mongodb://localhost:27017"
-	Database        = "raydium_amm"
-	CollectionIx    = "ixes"
+	Database     = "raydium_amm"
+	CollectionIx = "ixes"
 )
 
-func NewMongoAttendant(ixCh chan bson.M) *MongoAttendant {
-	client, err := mongo.Connect(options.Client().ApplyURI(MongoDataSource))
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func NewMongoAttendant(ixCh chan bson.M, client *mongo.Client) *MongoAttendant {
 	return &MongoAttendant{
 		cli:  client,
 		ixCh: ixCh,

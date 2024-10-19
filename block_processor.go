@@ -131,10 +131,10 @@ type BlockProcessorParser struct {
 	txCh         chan *OrmTx
 	ixCh         chan bson.M
 	marketGetter MarketGetter
-	cacheMarket  Cache[string, *Market]
+	cacheMarket  Cache[string, *OrmMarket]
 }
 
-func newBlockProcessorParser(txCh chan *OrmTx, ixCh chan bson.M, mg MarketGetter, cm Cache[string, *Market]) (bpp *BlockProcessorParser, err error) {
+func newBlockProcessorParser(txCh chan *OrmTx, ixCh chan bson.M, mg MarketGetter, cm Cache[string, *OrmMarket]) (bpp *BlockProcessorParser, err error) {
 	return &BlockProcessorParser{
 		ixCh:         ixCh,
 		txCh:         txCh,

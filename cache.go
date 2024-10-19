@@ -14,27 +14,27 @@ type Cache[K any, V any] interface {
 type CacheMarketRedis struct {
 	cli            *redis.Client
 	ctx            context.Context
-	local          map[string]*Market
+	local          map[string]*OrmMarket
 	redisKeyPrefix string
 }
 
-var _ Cache[string, *Market] = &CacheMarketRedis{}
+var _ Cache[string, *OrmMarket] = &CacheMarketRedis{}
 
 const (
 	RedisKeyPrefixMarket    = "m:"
 	RedisKeyPrefixMarketLen = len(RedisKeyPrefixMarket)
 )
 
-func NewCacheRedisMarket(redisCli *redis.Client) Cache[string, *Market] {
+func NewCacheRedisMarket(redisCli *redis.Client) Cache[string, *OrmMarket] {
 	return &CacheMarketRedis{
 		cli:            redisCli,
 		ctx:            context.Background(),
-		local:          make(map[string]*Market),
+		local:          make(map[string]*OrmMarket),
 		redisKeyPrefix: RedisKeyPrefixMarket,
 	}
 }
 
-func (c *CacheMarketRedis) Get(k string) (*Market, error) {
+func (c *CacheMarketRedis) Get(k string) (*OrmMarket, error) {
 	if market, ok := c.local[k]; ok {
 		return market, nil
 	}
@@ -44,7 +44,7 @@ func (c *CacheMarketRedis) Get(k string) (*Market, error) {
 		return nil, nil
 	}
 
-	var m Market
+	var m OrmMarket
 	err = json.Unmarshal([]byte(data), &m)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (c *CacheMarketRedis) Get(k string) (*Market, error) {
 	return &m, nil
 }
 
-func (c *CacheMarketRedis) Set(k string, v *Market) error {
+func (c *CacheMarketRedis) Set(k string, v *OrmMarket) error {
 	c.local[k] = v
 
 	data, err := json.Marshal(v)
