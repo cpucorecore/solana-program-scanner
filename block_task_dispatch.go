@@ -19,7 +19,7 @@ type BlockTaskDispatcher struct {
 }
 
 func NewBlockTaskDispatcher(fc FlowController) *BlockTaskDispatcher {
-	cli := rpc.NewRpcClient(conf.Solana.RpcEndpoint)
+	cli := rpc.NewRpcClient(gc.Solana.RpcEndpoint)
 	return &BlockTaskDispatcher{
 		cli: cli,
 		fc:  fc,

@@ -3,18 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"time"
 )
 
-func parseFlag() {
-	flag.StringVar(&conf.Solana.RpcEndpoint, "solana-rpc-endpoint", DefaultSolanaRpcEndpoint, "solana rpc endpoint")
-
-	var ReqInterval int
-	flag.IntVar(&ReqInterval, "req-interval", DefaultSolanaRpcReqIntervalMillisecond, "rpc request interval in millisecond")
-	conf.Solana.RpcReqInterval = time.Duration(ReqInterval) * time.Millisecond
-
-	flag.IntVar(&conf.Solana.BlockGetterWorkerNumber, "block-getter-worker-number", DefaultSolanaBlockGetterWorkerNumber, "block getter worker number")
-	flag.Uint64Var(&conf.Solana.StartSlot, "start-slot", DefaultSolanaStartSlot, "start slot")
+func parseFlag() { // TODO
+	flag.StringVar(&gc.Solana.RpcEndpoint, "solana-rpc-endpoint", DefaultSolanaRpcEndpoint, "solana rpc endpoint")
+	flag.IntVar(&gc.GetterBlock.WorkerNumber, "getter-block-worker-number", DefaultGetterBlockWorkerNumber, "getter block worker number")
+	flag.Uint64Var(&gc.GetterBlock.StartSlot, "getter-block-start-slot", DefaultGetterBlockStartSlot, "start slot")
 }
 
 func main() {
@@ -27,4 +21,6 @@ func main() {
 	wg, fc := f.assemble().runProducts(ctx)
 	wg.Wait()
 	fc.stopLog()
+
+	f.Shutdown()
 }

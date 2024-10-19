@@ -19,8 +19,8 @@ func NewBlockHeightManager() BlockHeightManager {
 	return &blockHeightManager{}
 }
 
-func (b *blockHeightManager) Init(height int64) {
-	b.curHeight = height
+func (b *blockHeightManager) Init(heightFinished int64) {
+	b.curHeight = heightFinished
 }
 
 func (b *blockHeightManager) CanCommit(height int64) bool {

@@ -1,24 +1,131 @@
 package main
 
-import "time"
-
-var conf = &Config{}
+import (
+	"fmt"
+	"time"
+)
 
 const (
-	DefaultSolanaRpcEndpoint               = "https://api.mainnet-beta.solana.com"
-	DefaultSolanaRpcReqIntervalMillisecond = 10_000 // 10 seconds
-	DefaultSolanaBlockGetterWorkerNumber   = 3
-	DefaultSolanaStartSlot                 = uint64(295503380)
+	DefaultBlocksFilePath = "blocks.json"
+
+	DefaultSolanaRpcEndpoint = "https://api.mainnet-beta.solana.com"
+
+	DefaultRedisAddr     = "127.0.0.1:6379"
+	DefaultRedisUsername = ""
+	DefaultRedisPassword = ""
+
+	DefaultPostgresHost     = "localhost"
+	DefaultPostgresPort     = 5432
+	DefaultPostgresUsername = "postgres"
+	DefaultPostgresPassword = "12345678"
+	DefaultPostgresDbName   = "postgres"
+	PostgresDbDriver        = "postgres"
+
+	DefaultMongoHost = "localhost"
+	DefaultMongoPort = 27017
+
+	DefaultGetterBlockWorkerNumber = 3
+	DefaultGetterBlockStartSlot    = uint64(295503380)
+	DefaultGetterBlockSlotCount    = uint64(0)
+
+	DefaultFlowControllerTpsMax            = 0
+	DefaultFlowControllerTpsTpsCountWindow = 5
+	DefaultFlowControllerTpsWaitUnit       = 1000
+	DefaultFlowControllerErrWaitUnit       = 1000
+	DefaultFlowControllerLogInterval       = 5000
 )
 
 type SolanaConf struct {
-	RpcEndpoint             string
-	RpcReqInterval          time.Duration
-	RpcReqErrDelay          string
-	BlockGetterWorkerNumber int
-	StartSlot               uint64
+	RpcEndpoint string
+}
+
+type RedisConf struct {
+	Addr     string
+	Username string
+	Password string
+}
+
+type PostgresConf struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	DbName   string
+}
+
+func (pc *PostgresConf) Datasource() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		pc.Username,
+		pc.Password,
+		pc.Host,
+		pc.Port,
+		pc.DbName,
+	)
+}
+
+type MongoConf struct {
+	Host string
+	Port int
+}
+
+func (mc *MongoConf) Datasource() string {
+	return fmt.Sprintf("mongodb://%s:%d", mc.Host, mc.Port)
+}
+
+type GetterBlockConf struct {
+	WorkerNumber int
+	StartSlot    uint64
+	SlotCount    uint64
+}
+
+type FlowControllerConf struct {
+	TpsMax         uint
+	TpsCountWindow int
+	TpsWaitUnit    time.Duration
+	ErrWaitUnit    time.Duration
+	LogInterval    time.Duration
 }
 
 type Config struct {
-	Solana SolanaConf
+	Solana         *SolanaConf
+	Redis          *RedisConf
+	Postgres       *PostgresConf
+	Mongo          *MongoConf
+	GetterBlock    *GetterBlockConf
+	FlowController *FlowControllerConf
+}
+
+var gc = &Config{
+	Solana: &SolanaConf{
+		RpcEndpoint: DefaultSolanaRpcEndpoint,
+	},
+	Redis: &RedisConf{
+		Addr:     DefaultRedisAddr,
+		Username: DefaultRedisUsername,
+		Password: DefaultRedisPassword,
+	},
+	Postgres: &PostgresConf{
+		Host:     DefaultPostgresHost,
+		Port:     DefaultPostgresPort,
+		Username: DefaultPostgresUsername,
+		Password: DefaultPostgresPassword,
+		DbName:   DefaultPostgresDbName,
+	},
+	Mongo: &MongoConf{
+		Host: DefaultMongoHost,
+		Port: DefaultMongoPort,
+	},
+	GetterBlock: &GetterBlockConf{
+		WorkerNumber: DefaultGetterBlockWorkerNumber,
+		StartSlot:    DefaultGetterBlockStartSlot,
+		SlotCount:    DefaultGetterBlockSlotCount,
+	},
+	FlowController: &FlowControllerConf{
+		TpsMax:         DefaultFlowControllerTpsMax,
+		TpsCountWindow: DefaultFlowControllerTpsTpsCountWindow,
+		TpsWaitUnit:    DefaultFlowControllerTpsWaitUnit,
+		ErrWaitUnit:    DefaultFlowControllerErrWaitUnit,
+		LogInterval:    DefaultFlowControllerLogInterval,
+	},
 }

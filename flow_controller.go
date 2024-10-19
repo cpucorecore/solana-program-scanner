@@ -17,7 +17,7 @@ type FlowController interface {
 }
 
 type flowController struct {
-	TargetTps      int
+	TpsMax         uint
 	TpsCountWindow int
 	TpsWaitUnit    time.Duration
 	ErrWaitUnit    time.Duration
@@ -125,9 +125,9 @@ func (mc *mutexCounter) reset() {
 	mc.cnt = 0
 }
 
-func NewFlowController(targetTps int, tpsCountWindow int, tpsWaitUnit time.Duration, errWaitUnit time.Duration) FlowController {
+func NewFlowController(tpsMax uint, tpsCountWindow int, tpsWaitUnit time.Duration, errWaitUnit time.Duration) FlowController {
 	return &flowController{
-		TargetTps:      targetTps,
+		TpsMax:         tpsMax,
 		TpsCountWindow: tpsCountWindow,
 		TpsWaitUnit:    tpsWaitUnit,
 		ErrWaitUnit:    errWaitUnit,
@@ -139,7 +139,7 @@ func (fc *flowController) onDone(timestamp time.Time) {
 	fc.ErrCounterTmp.reset()
 	fc.OkCounter.up()
 	tps := fc.TpsCounter.onDone(timestamp)
-	if tps > float32(fc.TargetTps) {
+	if tps > float32(fc.TpsMax) {
 		time.Sleep(time.Millisecond * 100) // TODO calc the sleep time
 	}
 }

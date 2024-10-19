@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 	"xorm.io/xorm"
 
 	"github.com/blocto/solana-go-sdk/rpc"
@@ -54,14 +53,9 @@ func (f *Factory) assembleRedisClient(options *redis.Options) {
 	f.redisCli = redis.NewClient(options)
 }
 
-const (
-	DbDriverPostgres = "postgres"
-)
-
 func (f *Factory) assemblePostgresClient(dataSource string) {
-	engine, err := xorm.NewEngine(DbDriverPostgres, dataSource)
+	engine, err := xorm.NewEngine(PostgresDbDriver, dataSource)
 	if err != nil {
-		f.destroy()
 		Logger.Fatal(fmt.Sprintf("xorm.NewEngine err:%v", err))
 	}
 
@@ -71,7 +65,7 @@ func (f *Factory) assemblePostgresClient(dataSource string) {
 func (f *Factory) assembleMongoClient(uri string) {
 	connect, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
-		f.destroy()
+		f.postgresCli.Close()
 		Logger.Fatal(fmt.Sprintf("mongo.Connect err:%v", err))
 	}
 
@@ -79,7 +73,7 @@ func (f *Factory) assembleMongoClient(uri string) {
 }
 
 func (f *Factory) assembleSolanaClient() *rpc.RpcClient {
-	r := rpc.NewRpcClient(conf.Solana.RpcEndpoint)
+	r := rpc.NewRpcClient(gc.Solana.RpcEndpoint)
 	f.solanaClis = append(f.solanaClis, &r)
 	return &r
 }
@@ -91,7 +85,12 @@ func (f *Factory) assemblePipelines() {
 }
 
 func (f *Factory) assembleFlowController() {
-	f.flowController = NewFlowController(5, 5, time.Second, time.Second)
+	f.flowController = NewFlowController(
+		gc.FlowController.TpsMax,
+		gc.FlowController.TpsCountWindow,
+		gc.FlowController.TpsWaitUnit,
+		gc.FlowController.ErrWaitUnit,
+	)
 }
 
 func (f *Factory) assembleBlockHeightManager() {
@@ -132,7 +131,7 @@ func (f *Factory) assembleParserTx() {
 func (f *Factory) assembleBlockHandler() {
 	f.blockHandler = NewBlockHandler(f.blockCh)
 
-	bpf := NewBlockProcessorFile("blocks.json")
+	bpf := NewBlockProcessorFile(DefaultBlocksFilePath)
 	bpp := NewBlockProcessorParser(f.parserTx)
 
 	f.blockHandler.registerProcessor(bpf)
@@ -140,12 +139,10 @@ func (f *Factory) assembleBlockHandler() {
 }
 
 func (f *Factory) assemble() *Factory {
-	redisOptions := f.assembleRedisOptions("localhost:6379", "", "") //TODO config
+	redisOptions := f.assembleRedisOptions(gc.Redis.Addr, gc.Redis.Username, gc.Redis.Password)
 	f.assembleRedisClient(redisOptions)
-	const DataSource = "postgres://postgres:12345678@localhost:5432/postgres?sslmode=disable"
-	f.assemblePostgresClient(DataSource) // TODO config
-	MongoDataSource := "mongodb://localhost:27017"
-	f.assembleMongoClient(MongoDataSource) // TODO config
+	f.assemblePostgresClient(gc.Postgres.Datasource())
+	f.assembleMongoClient(gc.Mongo.Datasource())
 	f.assembleSolanaClient()
 	f.assemblePipelines()
 	f.assembleFlowController()
@@ -153,21 +150,21 @@ func (f *Factory) assemble() *Factory {
 	f.assembleMongoAttendant()
 	f.assemblePostgresAttendant()
 	f.assembleBlockTaskDispatcher()
-	f.assembleGetterBlock(3) // TODO config
+	f.assembleGetterBlock(gc.GetterBlock.WorkerNumber)
 	f.assembleCacheMarket()
 	f.assembleMarketGetter()
 	f.assembleParserTxRaydiumAmm()
 	f.assembleParserTx()
 	f.assembleBlockHandler()
 
-	startBlockHeight := f.blockGetter.getBlockHeight(conf.Solana.StartSlot)
+	startBlockHeight := f.blockGetter.getBlockHeight(gc.GetterBlock.StartSlot)
 	f.blockHeightManager.Init(startBlockHeight - 1)
 
 	return f
 }
 
 func (f *Factory) runProducts(ctx context.Context) (*sync.WaitGroup, FlowController) {
-	go f.flowController.startLog(time.Second * 5)
+	go f.flowController.startLog(gc.FlowController.LogInterval)
 
 	var wg sync.WaitGroup
 
@@ -181,11 +178,19 @@ func (f *Factory) runProducts(ctx context.Context) (*sync.WaitGroup, FlowControl
 	go f.blockGetter.keepBlockGetting(ctx, &wg, f.blockGetTaskCh, f.blockCh)
 
 	wg.Add(1)
-	go f.blockTaskDispatcher.keepDispatchingTask(ctx, &wg, conf.Solana.StartSlot, 3, f.blockGetTaskCh) // TODO config
+	go f.blockTaskDispatcher.keepDispatchingTask(
+		ctx,
+		&wg,
+		gc.GetterBlock.StartSlot,
+		gc.GetterBlock.SlotCount,
+		f.blockGetTaskCh,
+	)
 
 	return &wg, f.flowController
 }
 
-func (f *Factory) destroy() {
-	panic("impl")
+func (f *Factory) Shutdown() {
+	f.mongoCli.Disconnect(context.Background())
+	f.postgresCli.Close()
+	f.redisCli.Close()
 }
