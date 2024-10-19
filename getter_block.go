@@ -60,6 +60,10 @@ func (bg *GetterBlock) keepBlockGetting(ctx context.Context, wg *sync.WaitGroup,
 		close(blockCh)
 	}()
 
+	const queryDuration = time.Millisecond * 10
+	const logDuration = time.Second * 10
+	const logPoint = int(logDuration / queryDuration)
+
 	var wgWorker sync.WaitGroup
 	wgWorker.Add(bg.workerNumber)
 
@@ -96,10 +100,10 @@ func (bg *GetterBlock) keepBlockGetting(ctx context.Context, wg *sync.WaitGroup,
 					bg.fc.onDone(time.Now())
 					Logger.Info(fmt.Sprintf("id:%d GetBlock:%d:%d succeed", id, slot, *resp.Result.BlockHeight))
 
+					cnt := 0
 					for {
-						cnt := 0
-						if cnt%100 == 0 {
-							Logger.Debug(fmt.Sprintf("id:%d current height:%d, ParentSlot:%d, height:%d", id, bg.bhm.Get(), resp.Result.ParentSlot, *resp.Result.BlockHeight))
+						if cnt%logPoint == 0 {
+							Logger.Info(fmt.Sprintf("id:%d current height:%d, ParentSlot:%d, height:%d", id, bg.bhm.Get(), resp.Result.ParentSlot, *resp.Result.BlockHeight))
 						}
 						cnt += 1
 
@@ -108,7 +112,8 @@ func (bg *GetterBlock) keepBlockGetting(ctx context.Context, wg *sync.WaitGroup,
 							bg.bhm.Commit(*resp.Result.BlockHeight)
 							break
 						}
-						time.Sleep(time.Millisecond * 10)
+
+						time.Sleep(queryDuration)
 					}
 					break
 				}

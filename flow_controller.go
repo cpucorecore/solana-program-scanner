@@ -155,7 +155,8 @@ func (fc *flowController) startLog(logInterval time.Duration) {
 	for !fc.Stop {
 		time.Sleep(logInterval)
 		fcJson, _ := json.Marshal(fc)
-		Logger.Info(fmt.Sprintf("flow controller dump: %s", string(fcJson)))
+		Logger.Info(fmt.Sprintf("flow controller dump: %s", string(fcJson))) // TODO merge
+		Logger.Info(fc.TpsCounter.String())                                  // TODO merge
 	}
 }
 

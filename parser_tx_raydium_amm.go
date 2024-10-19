@@ -63,16 +63,21 @@ func (pt *ParserTxRaydiumAmm) ParseIxSwapBaseIn(
 	ix *raydium_amm.Instruction,
 	ixesInnerParsed []rpc.InstructionInnerParsed,
 ) {
-	ixSwapBaseIn, ok := ix.Impl.(*raydium_amm.SwapBaseIn)
+	swapBaseIn, ok := ix.Impl.(*raydium_amm.SwapBaseIn)
 	if !ok {
 		Logger.Fatal("type assertion (*raydium_amm.SwapBaseIn) failed")
 	}
 
-	if len(ixSwapBaseIn.AccountMetaSlice) != 18 {
-		Logger.Fatal(fmt.Sprintf("wrong amount of account:%d. %d %s", len(ixSwapBaseIn.AccountMetaSlice), blockHeight, txHash))
-	}
+	market := pt.getMarket(swapBaseIn.AccountMetaSlice[1].PublicKey.String())
 
-	market := pt.getMarket(ixSwapBaseIn.AccountMetaSlice[1].PublicKey.String())
+	var signer string
+	if len(swapBaseIn.AccountMetaSlice) == 18 {
+		signer = swapBaseIn.AccountMetaSlice[17].PublicKey.String()
+	} else if len(swapBaseIn.AccountMetaSlice) == 17 {
+		signer = swapBaseIn.AccountMetaSlice[16].PublicKey.String()
+	} else {
+		Logger.Fatal(fmt.Sprintf("wrong account number:%d, txHash:%s", len(swapBaseIn.AccountMetaSlice), txHash))
+	}
 
 	ormTx := &OrmTx{
 		TxHash: txHash,
@@ -81,7 +86,7 @@ func (pt *ParserTxRaydiumAmm) ParseIxSwapBaseIn(
 		//Token1Amount:  strconv.FormatUint(*ixSwapBaseIn.MinimumAmountOut, 10),
 		Token0Amount:  ixesInnerParsed[0].Parsed.Info.Amount,
 		Token1Amount:  ixesInnerParsed[1].Parsed.Info.Amount,
-		Maker:         ixSwapBaseIn.AccountMetaSlice[17].PublicKey.String(),
+		Maker:         signer,
 		Token0Address: market.BaseMint,
 		Token1Address: market.QuoteMint,
 		Block:         blockHeight,
@@ -105,8 +110,13 @@ func (pt *ParserTxRaydiumAmm) ParseIxSwapBaseOut(
 		Logger.Fatal("type assertion (*raydium_amm.SwapBaseOut) failed")
 	}
 
-	if len(swapBaseOut.AccountMetaSlice) != 18 {
-		Logger.Fatal("wrong amount of account")
+	var signer string
+	if len(swapBaseOut.AccountMetaSlice) == 18 {
+		signer = swapBaseOut.AccountMetaSlice[17].PublicKey.String()
+	} else if len(swapBaseOut.AccountMetaSlice) == 17 {
+		signer = swapBaseOut.AccountMetaSlice[16].PublicKey.String()
+	} else {
+		Logger.Fatal(fmt.Sprintf("wrong account number:%d, txHash:%s", len(swapBaseOut.AccountMetaSlice), txHash))
 	}
 
 	market := pt.getMarket(swapBaseOut.AccountMetaSlice[1].PublicKey.String())
@@ -118,7 +128,7 @@ func (pt *ParserTxRaydiumAmm) ParseIxSwapBaseOut(
 		//Token1Amount:  strconv.FormatUint(*swapBaseOut.AmountOut, 10),
 		Token0Amount:  ixesInnerParsed[0].Parsed.Info.Amount,
 		Token1Amount:  ixesInnerParsed[1].Parsed.Info.Amount,
-		Maker:         swapBaseOut.AccountMetaSlice[17].PublicKey.String(),
+		Maker:         signer,
 		Token0Address: market.BaseMint,
 		Token1Address: market.QuoteMint,
 		Block:         blockHeight,
