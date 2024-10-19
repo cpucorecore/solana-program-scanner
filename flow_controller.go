@@ -31,8 +31,8 @@ type flowController struct {
 }
 
 type tpsCounter struct {
-	countWindow int
-	timestamps  []time.Time
+	CountWindow int
+	Timestamps  []time.Time
 	mu          sync.Mutex
 }
 
@@ -49,7 +49,7 @@ func NewTpsCounter(countWindow int) TpsCounter {
 	}
 
 	return &tpsCounter{
-		countWindow: countWindow,
+		CountWindow: countWindow,
 	}
 }
 
@@ -57,23 +57,23 @@ func (tc *tpsCounter) onDone(timestamp time.Time) (tps float32) {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
 
-	tc.timestamps = append(tc.timestamps, timestamp)
-	reqCnt := len(tc.timestamps)
-	if reqCnt == tc.countWindow {
+	tc.Timestamps = append(tc.Timestamps, timestamp)
+	reqCnt := len(tc.Timestamps)
+	if reqCnt == tc.CountWindow {
 		tps = tc.curTps()
-		tc.timestamps = tc.timestamps[1:]
+		tc.Timestamps = tc.Timestamps[1:]
 	}
 
 	return
 }
 
 func (tc *tpsCounter) curTps() (tps float32) {
-	reqCnt := len(tc.timestamps)
+	reqCnt := len(tc.Timestamps)
 	if reqCnt <= 1 {
 		return
 	}
 
-	timeSecond := float32(1.0*tc.timestamps[reqCnt-1].Sub(tc.timestamps[0])) / float32(time.Second)
+	timeSecond := float32(1.0*tc.Timestamps[reqCnt-1].Sub(tc.Timestamps[0])) / float32(time.Second)
 	tps = float32(reqCnt) / timeSecond
 	return
 }
@@ -81,13 +81,13 @@ func (tc *tpsCounter) curTps() (tps float32) {
 func (tc *tpsCounter) String() string {
 	var sb strings.Builder
 	sb.WriteString("[")
-	for _, timestamp := range tc.timestamps {
+	for _, timestamp := range tc.Timestamps {
 		sb.WriteString(strconv.FormatInt(timestamp.UnixMilli(), 10))
 		sb.WriteString("\n")
 	}
 	sb.WriteString("]\n")
 
-	reqCnt := len(tc.timestamps)
+	reqCnt := len(tc.Timestamps)
 	if reqCnt >= 2 {
 		sb.WriteString(fmt.Sprintf("tps:%v", tc.curTps()))
 	}
@@ -96,33 +96,33 @@ func (tc *tpsCounter) String() string {
 }
 
 type mutexCounter struct {
-	cnt int
+	Cnt int
 	mu  sync.Mutex
 }
 
 func (mc *mutexCounter) get() (cnt int) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	cnt = mc.cnt
+	cnt = mc.Cnt
 	return
 }
 
 func (mc *mutexCounter) up() {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	mc.cnt++
+	mc.Cnt++
 }
 
 func (mc *mutexCounter) down() {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	mc.cnt--
+	mc.Cnt--
 }
 
 func (mc *mutexCounter) reset() {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	mc.cnt = 0
+	mc.Cnt = 0
 }
 
 func NewFlowController(tpsMax uint, tpsCountWindow int, tpsWaitUnit time.Duration, errWaitUnit time.Duration) FlowController {
@@ -139,7 +139,7 @@ func (fc *flowController) onDone(timestamp time.Time) {
 	fc.ErrCounterTmp.reset()
 	fc.OkCounter.up()
 	tps := fc.TpsCounter.onDone(timestamp)
-	if tps > float32(fc.TpsMax) {
+	if fc.TpsMax > 0 && tps > float32(fc.TpsMax) {
 		time.Sleep(time.Millisecond * 100) // TODO calc the sleep time
 	}
 }

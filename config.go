@@ -30,9 +30,9 @@ const (
 
 	DefaultFlowControllerTpsMax            = 0
 	DefaultFlowControllerTpsTpsCountWindow = 5
-	DefaultFlowControllerTpsWaitUnit       = 1000
-	DefaultFlowControllerErrWaitUnit       = 1000
-	DefaultFlowControllerLogInterval       = 5000
+	DefaultFlowControllerTpsWaitUnit       = time.Second
+	DefaultFlowControllerErrWaitUnit       = time.Second
+	DefaultFlowControllerLogInterval       = time.Second * 10
 )
 
 type SolanaConf struct {

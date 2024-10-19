@@ -64,8 +64,6 @@ func (btd *BlockTaskDispatcher) keepDispatchingTask(ctx context.Context, wg *syn
 			btd.fc.onErr()
 		}
 
-		btd.fc.onDone(time.Now())
-
 		if resp.Result >= cursor {
 			end := resp.Result
 			for ; cursor <= end; cursor++ {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"time"
-
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/mr-tron/base58"
 )
@@ -34,20 +32,19 @@ func (bg *GetterBlock) getMarket(marketAddress string) (market *OrmMarket, err e
 	var data any
 	for {
 		resp, err := bg.cli.GetAccountInfoWithConfig(context.Background(), marketAddress, config)
-
 		if err != nil {
 			bg.fc.onErr()
+			// TODO log
 			continue
 		}
 
 		if resp.Error != nil {
-			bg.fc.onDone(time.Now())
-			break
+			// TODO log
+			continue
 		}
 
-		bg.fc.onDone(time.Now())
-
 		data = resp.Result.Value.Data
+		break
 	}
 
 	dataArray, ok := data.([]any)

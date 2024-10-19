@@ -77,31 +77,29 @@ func (bg *GetterBlock) keepBlockGetting(ctx context.Context, wg *sync.WaitGroup,
 					return
 				}
 
-				Logger.Info(fmt.Sprintf("GetBlock:%d start", slot))
+				Logger.Info(fmt.Sprintf("id:%d GetBlock:%d start", id, slot))
 				failCnt := 0
 				for {
 					resp, err := bg.cli.GetBlockWithConfig(ctx, slot, getBlockConfig)
 					if err != nil {
 						bg.fc.onErr()
 						failCnt += 1
-						Logger.Info(fmt.Sprintf("get slot:%d failed:%d with err:%v", slot, failCnt, err))
+						Logger.Info(fmt.Sprintf("GetBlock:%d failed:%d with err:%v", slot, failCnt, err))
 						continue
 					}
 
 					if resp.Error != nil {
-						Logger.Error(fmt.Sprintf("TODO check! get slot:%d JsonRpc err:%s", slot, resp.Error.Error()))
-						// ignore this slot: TODO check
-						bg.fc.onDone(time.Now())
+						Logger.Error(fmt.Sprintf("id:%d TODO check! get slot:%d JsonRpc err:%s", id, slot, resp.Error.Error()))
 						break
 					}
 
 					bg.fc.onDone(time.Now())
-					Logger.Info(fmt.Sprintf("get slot:%d succeed", slot))
+					Logger.Info(fmt.Sprintf("id:%d GetBlock:%d:%d succeed", id, slot, *resp.Result.BlockHeight))
 
 					for {
 						cnt := 0
 						if cnt%100 == 0 {
-							Logger.Debug(fmt.Sprintf("current height:%d, ParentSlot:%d, height:%d", bg.bhm.Get(), resp.Result.ParentSlot, *resp.Result.BlockHeight))
+							Logger.Debug(fmt.Sprintf("id:%d current height:%d, ParentSlot:%d, height:%d", id, bg.bhm.Get(), resp.Result.ParentSlot, *resp.Result.BlockHeight))
 						}
 						cnt += 1
 
@@ -110,9 +108,8 @@ func (bg *GetterBlock) keepBlockGetting(ctx context.Context, wg *sync.WaitGroup,
 							bg.bhm.Commit(*resp.Result.BlockHeight)
 							break
 						}
-						time.Sleep(time.Millisecond * 100)
+						time.Sleep(time.Millisecond * 10)
 					}
-
 					break
 				}
 			}
