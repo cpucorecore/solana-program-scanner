@@ -98,7 +98,7 @@ type Config struct {
 	FlowController *FlowControllerConf
 }
 
-var gc = &Config{
+var gCfg = &Config{
 	AsyncLog: DefaultAsyncLog,
 	Solana: &SolanaConf{
 		RpcEndpoint: DefaultSolanaRpcEndpoint,

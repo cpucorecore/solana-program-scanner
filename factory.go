@@ -29,8 +29,8 @@ type Factory struct {
 
 	flowController      FlowController
 	blockHeightManager  block_height_manager.BlockHeightManager
-	mongoAttendant      *MongoAttendant
-	postgresAttendant   *PostgresAttendant
+	mongoAttendant      *AttendantMongo
+	postgresAttendant   *AttendantPostgres
 	blockTaskDispatcher *BlockTaskDispatcher
 	blockGetter         *GetterBlock
 	cacheMarket         Cache[string, *OrmMarket]
@@ -74,7 +74,7 @@ func (f *Factory) assembleMongoClient(uri string) {
 }
 
 func (f *Factory) assembleSolanaClient() *rpc.RpcClient {
-	r := rpc.NewRpcClient(gc.Solana.RpcEndpoint)
+	r := rpc.NewRpcClient(gCfg.Solana.RpcEndpoint)
 	f.solanaClis = append(f.solanaClis, &r)
 	return &r
 }
@@ -88,10 +88,10 @@ func (f *Factory) assemblePipelines() {
 
 func (f *Factory) assembleFlowController() {
 	f.flowController = NewFlowController(
-		gc.FlowController.TpsMax,
-		gc.FlowController.TpsCountWindow,
-		gc.FlowController.TpsWaitUnit,
-		gc.FlowController.ErrWaitUnit,
+		gCfg.FlowController.TpsMax,
+		gCfg.FlowController.TpsCountWindow,
+		gCfg.FlowController.TpsWaitUnit,
+		gCfg.FlowController.ErrWaitUnit,
 	)
 }
 
@@ -103,7 +103,7 @@ func (f *Factory) assembleMongoAttendant() {
 }
 
 func (f *Factory) assemblePostgresAttendant() {
-	f.postgresAttendant = NewPostgresAttendant(f.postgresCli)
+	f.postgresAttendant = NewAttendantPostgres(f.postgresCli)
 }
 
 func (f *Factory) assembleBlockTaskDispatcher() {
@@ -145,10 +145,10 @@ func (f *Factory) connectPipelines() {
 }
 
 func (f *Factory) assemble() *Factory {
-	redisOptions := f.assembleRedisOptions(gc.Redis.Addr, gc.Redis.Username, gc.Redis.Password)
+	redisOptions := f.assembleRedisOptions(gCfg.Redis.Addr, gCfg.Redis.Username, gCfg.Redis.Password)
 	f.assembleRedisClient(redisOptions)
-	f.assemblePostgresClient(gc.Postgres.Datasource())
-	f.assembleMongoClient(gc.Mongo.Datasource())
+	f.assemblePostgresClient(gCfg.Postgres.Datasource())
+	f.assembleMongoClient(gCfg.Mongo.Datasource())
 	f.assembleSolanaClient()
 	f.assemblePipelines()
 	f.assembleFlowController()
@@ -156,14 +156,14 @@ func (f *Factory) assemble() *Factory {
 	f.assembleMongoAttendant()
 	f.assemblePostgresAttendant()
 	f.assembleBlockTaskDispatcher()
-	f.assembleGetterBlock(gc.GetterBlock.WorkerNumber)
+	f.assembleGetterBlock(gCfg.GetterBlock.WorkerNumber)
 	f.assembleCacheMarket()
 	f.assembleMarketGetter()
 	f.assembleParserTxRaydiumAmm()
 	f.assembleParserTx()
 	f.assembleBlockHandler()
 
-	startBlockHeight := f.blockGetter.getBlockHeight(gc.GetterBlock.StartSlot)
+	startBlockHeight := f.blockGetter.getBlockHeight(gCfg.GetterBlock.StartSlot)
 	f.blockHeightManager.Init(startBlockHeight - 1)
 
 	f.connectPipelines()
@@ -171,7 +171,7 @@ func (f *Factory) assemble() *Factory {
 }
 
 func (f *Factory) runProducts(ctx context.Context) (*sync.WaitGroup, FlowController) {
-	go f.flowController.startLog(gc.FlowController.LogInterval)
+	go f.flowController.startLog(gCfg.FlowController.LogInterval)
 
 	var wg sync.WaitGroup
 
@@ -191,8 +191,8 @@ func (f *Factory) runProducts(ctx context.Context) (*sync.WaitGroup, FlowControl
 	go f.blockTaskDispatcher.keepDispatchingTask(
 		ctx,
 		&wg,
-		gc.GetterBlock.StartSlot,
-		gc.GetterBlock.SlotCount,
+		gCfg.GetterBlock.StartSlot,
+		gCfg.GetterBlock.SlotCount,
 		f.blockGetTaskCh,
 	)
 

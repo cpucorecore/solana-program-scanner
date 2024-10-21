@@ -14,24 +14,24 @@ const (
 	CollectionIx = "ixes"
 )
 
-type MongoAttendant struct {
+type AttendantMongo struct {
 	cli  *mongo.Client
 	ixCh chan bson.M
 }
 
-func NewMongoAttendant(ixCh chan bson.M, client *mongo.Client) *MongoAttendant {
-	return &MongoAttendant{
+func NewAttendantMongo(ixCh chan bson.M, client *mongo.Client) *AttendantMongo {
+	return &AttendantMongo{
 		cli:  client,
 		ixCh: ixCh,
 	}
 }
 
-func (ma *MongoAttendant) startServe(ctx context.Context, wg *sync.WaitGroup) {
+func (ma *AttendantMongo) startServe(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go ma.serveIx(ctx, wg)
 }
 
-func (ma *MongoAttendant) serveIx(ctx context.Context, wg *sync.WaitGroup) {
+func (ma *AttendantMongo) serveIx(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for {

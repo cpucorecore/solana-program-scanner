@@ -11,7 +11,7 @@ import (
 var Logger *zap.Logger
 
 func init() {
-	if !gc.AsyncLog {
+	if !gCfg.AsyncLog {
 		Logger, _ = zap.NewDevelopment()
 		return
 	}

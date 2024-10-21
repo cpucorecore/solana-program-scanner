@@ -31,7 +31,7 @@ var (
 )
 
 func NewGetterBlock(workerNumber int, bhm block_height_manager.BlockHeightManager, fc FlowController) *GetterBlock {
-	cli := rpc.NewRpcClient(gc.Solana.RpcEndpoint)
+	cli := rpc.NewRpcClient(gCfg.Solana.RpcEndpoint)
 	return &GetterBlock{
 		workerNumber: workerNumber,
 		cli:          cli,

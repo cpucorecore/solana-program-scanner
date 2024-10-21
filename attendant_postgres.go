@@ -14,17 +14,17 @@ const (
 	DbErrCodeUniqueConstrain = "23505"
 )
 
-type PostgresAttendant struct {
+type AttendantPostgres struct {
 	cli *xorm.Engine
 }
 
-func NewPostgresAttendant(engine *xorm.Engine) *PostgresAttendant {
-	return &PostgresAttendant{
+func NewAttendantPostgres(engine *xorm.Engine) *AttendantPostgres {
+	return &AttendantPostgres{
 		cli: engine,
 	}
 }
 
-func (pa *PostgresAttendant) serveTx(ctx context.Context, wg *sync.WaitGroup, txCh chan *OrmTx) {
+func (pa *AttendantPostgres) serveTx(ctx context.Context, wg *sync.WaitGroup, txCh chan *OrmTx) {
 	defer wg.Done()
 
 	for {
@@ -50,7 +50,7 @@ func (pa *PostgresAttendant) serveTx(ctx context.Context, wg *sync.WaitGroup, tx
 	}
 }
 
-func (pa *PostgresAttendant) serveMarket(ctx context.Context, wg *sync.WaitGroup, marketCh chan *OrmMarket) {
+func (pa *AttendantPostgres) serveMarket(ctx context.Context, wg *sync.WaitGroup, marketCh chan *OrmMarket) {
 	defer wg.Done()
 
 	for {
