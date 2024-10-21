@@ -9,7 +9,9 @@ const (
 	DefaultAsyncLog       = false
 	DefaultBlocksFilePath = "blocks.json"
 
-	DefaultSolanaRpcEndpoint = "https://api.mainnet-beta.solana.com"
+	DefaultSolPriceQueryInterval = time.Second * 10
+	DefaultSolPriceQueryUrl      = "https://hermes.pyth.network/v2/updates/price/latest?ids%5B%5D=0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d"
+	DefaultSolanaRpcEndpoint     = "https://api.mainnet-beta.solana.com"
 
 	DefaultRedisAddr     = "127.0.0.1:6379"
 	DefaultRedisUsername = ""
@@ -35,6 +37,11 @@ const (
 	DefaultFlowControllerErrWaitUnit       = time.Second
 	DefaultFlowControllerLogInterval       = time.Second * 10
 )
+
+type SolPriceQueryConf struct {
+	QueryInterval time.Duration
+	QueryUrl      string
+}
 
 type SolanaConf struct {
 	RpcEndpoint string
@@ -90,6 +97,7 @@ type FlowControllerConf struct {
 
 type Config struct {
 	AsyncLog       bool
+	SolPriceQuery  *SolPriceQueryConf
 	Solana         *SolanaConf
 	Redis          *RedisConf
 	Postgres       *PostgresConf
@@ -100,6 +108,11 @@ type Config struct {
 
 var gCfg = &Config{
 	AsyncLog: DefaultAsyncLog,
+
+	SolPriceQuery: &SolPriceQueryConf{
+		QueryInterval: DefaultSolPriceQueryInterval,
+		QueryUrl:      DefaultSolPriceQueryUrl,
+	},
 	Solana: &SolanaConf{
 		RpcEndpoint: DefaultSolanaRpcEndpoint,
 	},

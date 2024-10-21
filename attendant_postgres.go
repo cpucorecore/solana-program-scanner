@@ -15,7 +15,9 @@ const (
 )
 
 type AttendantPostgres struct {
-	cli *xorm.Engine
+	BatchSize    int
+	AttendantNum int
+	cli          *xorm.Engine
 }
 
 func NewAttendantPostgres(engine *xorm.Engine) *AttendantPostgres {

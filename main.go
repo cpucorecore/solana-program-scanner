@@ -18,7 +18,9 @@ func main() {
 	defer cancel()
 
 	f := Factory{}
+
 	wg, fc := f.assemble().runProducts(ctx)
+	f.servicePrice.Run(ctx)
 	wg.Wait()
 	fc.stopLog()
 

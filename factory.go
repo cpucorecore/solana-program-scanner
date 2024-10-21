@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 	"xorm.io/xorm"
 
 	"github.com/blocto/solana-go-sdk/rpc"
@@ -15,6 +16,7 @@ import (
 )
 
 type Factory struct {
+	servicePrice ServicePrice
 	redisOptions *redis.Options   // redis options
 	redisCli     *redis.Client    // redis client
 	postgresCli  *xorm.Engine     // postgres client
@@ -38,6 +40,11 @@ type Factory struct {
 	parserTxRaydiumAmm  *ParserTxRaydiumAmm
 	parserTx            *ParserTx
 	blockHandler        *BlockHandler
+}
+
+func (f *Factory) assembleServicePrice(queryInterval time.Duration, queryUrl string) ServicePrice {
+	f.servicePrice = NewServicePriceHermes(queryInterval, queryUrl)
+	return f.servicePrice
 }
 
 func (f *Factory) assembleRedisOptions(addr string, username string, password string) *redis.Options {
@@ -145,6 +152,7 @@ func (f *Factory) connectPipelines() {
 }
 
 func (f *Factory) assemble() *Factory {
+	f.assembleServicePrice(gCfg.SolPriceQuery.QueryInterval, gCfg.SolPriceQuery.QueryUrl).MustQuerySuccess(10)
 	redisOptions := f.assembleRedisOptions(gCfg.Redis.Addr, gCfg.Redis.Username, gCfg.Redis.Password)
 	f.assembleRedisClient(redisOptions)
 	f.assemblePostgresClient(gCfg.Postgres.Datasource())
