@@ -1,0 +1,7 @@
+.idea
+blocks.json
+scanner.log*
+solana-program-scanner
+config.json*
+.vscode
+*.gz

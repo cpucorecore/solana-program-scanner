@@ -1,0 +1,12 @@
+signature: 4ADotFjPe3czrm17g7sdh78aS4s5Gvz2ZcyYWUqhxeQnNstozRQwxNVQom5aKU99CRe2WBx1M48AnTbvdTikEf9C, maxStackHeight: 2, raydiumCallCount:4
+signature: 4rnfN7uBSpNZDW8wwJmJuQMyxNN2ArpvzedixP2PmpEb54Kh6VHH9mw9Xum5dDiT5Lr8VkUFf6ksFEKyPEcyo5J, maxStackHeight: 2, raydiumCallCount:4
+
+
+➜  solana-program-scanner git:(main) ✗ grep "maxStackHeight: 3" test.log  |grep -v "raydiumCallCount:1"
+signature: 3aPjKXbcr5BFKzsaUvG3vaUNVoi3rBb366JxVX4W9qCwBkLdGvTn5pqJZ6CeSqMMateQXxNyCkRYmyB9R83PiE7Q, maxStackHeight: 3, raydiumCallCount:2
+signature: FTEWZ2hV3TX9yaexLp5BbdwfSYksfqprhTYjVrbGtATcva7q2xdFExGGN4eFVo8CC7kDXUswaBJL5QSi811LZL6, maxStackHeight: 3, raydiumCallCount:2
+signature: 5nj7kt61RGs3UoFPxKwfokWKrNxbYjmaexNUjhdgCqRZFPDFNc5gt9HbQ53G4cQBFF72CYA7o2h8CFTAY4cex3js, maxStackHeight: 3, raydiumCallCount:2
+signature: 4p2Y1mHoHHNmFggNtFoRLTg9cpM85Xx8wg41w6f5a5NNX9d7iahoKjgwboE83hiLMr2hLCAuRkM9HwtfipTxMQSS, maxStackHeight: 3, raydiumCallCount:2
+signature: 3c61Y5EDW14RAz5oeJaqzB6Nar7BAQ8uBBcKBkDhAHnpVFKH2yMqVq7xx6nJMJhH8SdLpERgBrPLEvDmKVTicyyv, maxStackHeight: 3, raydiumCallCount:2
+signature: 2oYjktYtx2nqLTVqeztgfkRf9taBExBzd4YhySPkgQTyHD5WWaJEEfwY33bNneW97gvSQc8YsMbQKBCMF3Q9nsMK, maxStackHeight: 3, raydiumCallCount:2
+

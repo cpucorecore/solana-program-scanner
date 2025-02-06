@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package proto;
+import "google/protobuf/empty.proto";
+
+option go_package = "./proto";
+
+service Sol {
+  rpc SendBlockTxs(stream SendBlockTxsReq) returns (google.protobuf.Empty);
+}
+
+message SendBlockTxsReq {
+  Block block = 1;
+  repeated Tx txs = 2;
+}
+
+message Block {
+  uint64 block = 1;
+  int64 block_at = 2;
+}
+
+message Tx {
+  string maker = 1;
+  string market_address = 2;
+  string token0_address = 3;
+  string token1_address = 4;
+  string token0_amount = 5;
+  string token1_amount = 6;
+  string price_usd = 7;
+  string amount_usd = 8;
+  uint64 block = 9;
+  uint64 block_index = 10;
+  string event = 11;
+  string tx_hash = 12;
+  uint64 tx_index = 13;
+  string block_at = 14;
+}
